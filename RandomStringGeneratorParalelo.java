@@ -17,23 +17,11 @@ public class RandomStringGeneratorParalelo  {
     private int contador=0;
     String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     StringBuilder sb = new StringBuilder();
-    public static String gerarStringAleatoria(int comprimento) {
-        
-        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        Random random = new Random();
-        StringBuilder sb = new StringBuilder(comprimento);
-        
-        
-        for (int i = 0; i < comprimento; i++) {
-            int index = random.nextInt(caracteres.length());
-            sb.append(caracteres.charAt(index));
-        }
-        return sb.toString();
-                    }
+    boolean loop=true;
+    
    
 
     public static void main(String[] args) {
-        int comprimentoDaString = 3;
         String senha = "123";
         //String stringAleatoria = gerarStringAleatoria(comprimentoDaString);
         //System.out.println("String aleatória: " + stringAleatoria);
@@ -41,21 +29,18 @@ public class RandomStringGeneratorParalelo  {
         p.executaThreads(senha);
     } 
     
-    public boolean executarContador(String senha){        
+    public void executarContador(String senha,int t){        
         
         Random random = new Random();
         StringBuilder result=new StringBuilder();
             for (int i = 0; i < senha.length(); i++) {
             int index = random.nextInt(caracteres.length());
             result.append(caracteres.charAt(index));
-            
         }
-            System.out.println(""+result);
-        if(result.toString().equals(senha)){
-            System.out.println("A senha é: "+senha);
-            return false;
+            System.out.println(""+result+" thread"+t);
+        if(result.toString().equals(senha)||loop==false){
+            loop=false;
         }
-            return true;
     }
     
     public void executaThreads(String senha){
@@ -63,30 +48,32 @@ public class RandomStringGeneratorParalelo  {
         Thread t1 = new Thread(new Runnable(){
             @Override
             public void run() {
-        boolean loop = true;
                 do {
-                   loop= executarContador(senha);
-                    
+                   executarContador(senha,1);
+                   contador++; 
                 } while (loop);
-                
+                loop=false;
             }
             
         });
         Thread t2 = new Thread(new Runnable(){
             @Override
             public void run() {
-        boolean loop = true;
                 do{
-                   loop= executarContador(senha);
+                   executarContador(senha,2);
+                   contador++; 
                 } while (loop);
+                loop=false;
             }
             
-        });t1.start();
-        t2.start();       
+        });  t1.start();
+        t2.start();     
         
         try {
             t1.join();
             t2.join();
+            System.out.println("A senha é: "+senha);
+            System.out.println("Numero de tentativas: "+contador);
         } catch (InterruptedException ex) {
             Logger.getLogger(RandomStringGeneratorParalelo.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -7,7 +7,6 @@ public class RandomStringParaleloTeste {
 
     static String caracteres = "abcdefghijklmnopqrstuvwxyz0123456789";
     static String senha;
-
     static AtomicInteger contador = new AtomicInteger(0);
     static AtomicBoolean encontrada = new AtomicBoolean(false);
 
@@ -30,23 +29,34 @@ public class RandomStringParaleloTeste {
     }
 
     static class TentativaThread extends Thread {
-        private final long inicio;
-        private final long fim;
+        private final long totalCombinacoes;
         private final int comprimento;
+        private final int threadId;
+        private final int numThreads;
+        private final Thread[] todasThreads;
 
-        TentativaThread(long inicio, long fim, int comprimento) {
-            this.inicio = inicio;
-            this.fim = fim;
+        TentativaThread(long totalCombinacoes, int comprimento, int threadId, int numThreads, Thread[] todasThreads) {
+            this.totalCombinacoes = totalCombinacoes;
             this.comprimento = comprimento;
+            this.threadId = threadId;
+            this.numThreads = numThreads;
+            this.todasThreads = todasThreads;
         }
 
         @Override
         public void run() {
-            for (long i = inicio; i < fim && !encontrada.get(); i++) {
+            for (long i = threadId; i < totalCombinacoes; i += numThreads) {
+                if (Thread.currentThread().isInterrupted() || encontrada.get()) return;
+
                 String tentativa = numeroParaSenha(i, comprimento);
                 contador.incrementAndGet();
+
                 if (tentativa.equals(senha)) {
                     encontrada.set(true);
+                    // Interrompe todas as outras threads
+                    for (Thread t : todasThreads) {
+                        if (t != this) t.interrupt();
+                    }
                     break;
                 }
             }
@@ -65,16 +75,12 @@ public class RandomStringParaleloTeste {
             System.out.println("Senha de " + comprimento + " dígitos alvo: " + senha);
 
             long totalCombinacoes = (long) Math.pow(base, comprimento);
-            long faixa = totalCombinacoes / numThreads;
-
             Thread[] threads = new Thread[numThreads];
 
             long inicio = System.currentTimeMillis();
 
             for (int i = 0; i < numThreads; i++) {
-                long inicioFaixa = i * faixa;
-                long fimFaixa = (i == numThreads - 1) ? totalCombinacoes : (i + 1) * faixa;
-                threads[i] = new TentativaThread(inicioFaixa, fimFaixa, comprimento);
+                threads[i] = new TentativaThread(totalCombinacoes, comprimento, i, numThreads, threads);
                 threads[i].start();
             }
 
